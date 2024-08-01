@@ -1,1 +1,1 @@
-import telegram
+import bot

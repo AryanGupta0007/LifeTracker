@@ -1,23 +1,25 @@
-
 import sqlite3
 from config import config
 from datetime import datetime
 # // user details
 # // todo details (linked with user table)
 class db:
-    conn = sqlite3.connect(config['database']['name'])
-    crsr = conn.cursor()
+    def __init__(self):
+        self.conn = sqlite3.connect(config['database']['name'])
+        self.crsr = self.conn.cursor()
     def create_tables(self):
         self.crsr.execute(''' CREATE TABLE IF NOT EXISTS  user(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            username TEXT
+            username TEXT,
+            userID INTEGER
         )''')
 
         self.crsr.execute(''' CREATE TABLE IF NOT EXISTS todo(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             task TEXT,
-            start TEXT,
+            date TEXT,
+            time TEXT,
             end TEXT,
             status TEXT,
             timeTaken TEXT,
@@ -40,6 +42,11 @@ class db:
         self.conn.commit()
         self.conn.close()
 
+    def get_all_todos(self):
+        self.crsr.execute('''SELECT * FROM todo''')
+        results = self.crsr.fetchall()
+        return results
+
 
 class UserTable:
     def __init__(self):
@@ -47,18 +54,24 @@ class UserTable:
         self.crsr = self.conn.cursor()
 
 
-    def get_user_from_username(self, username):
-        self.crsr.execute(''' select * from user where
-        username = ?''', (username, ))
+    def get_user_from_username_or_id(self, username=None, id=None):
+        if username:
+            self.crsr.execute(''' select * from user where
+            username = ?''', (username, ))
+        if id:
+            self.crsr.execute(''' select * from user where
+                        id = ?''', (id,))
         user = self.crsr.fetchone()
         if user:
             id = user[0]
             name = user[1]
             username = user[2]
+            chat_id = user[3]
             user_details = {
                 "id": id,
                 "name": name,
-                "username": username
+                "username": username,
+                "chatID": chat_id
             }
         else:
             user_details = None
@@ -67,17 +80,18 @@ class UserTable:
 
     def insert(self, data):
         self.crsr.execute('''
-        INSERT INTO user (username, name) VALUES (?, ?)''', (data["username"], data["name"],)
+        INSERT INTO user (username, name, userID) VALUES (?, ?, ?)''',
+                          (data["username"], data["name"], data['userID'])
         )
         self.conn.commit()
-        user = self.get_user_from_username(username=data['username'])
+        user = self.get_user_from_username_or_id(username=data['username'])
         return user
 
 
     def find_user_or_fail(self, data):
         username = data['username']
         print(username)
-        user = self.get_user_from_username(username)
+        user = self.get_user_from_username_or_id(username)
         if user:
             return {'user': user, 'present': True}
         else:
@@ -133,29 +147,48 @@ class TodoTable:
 
     def insert(self, todo):
         status = 'created'
-        start = f"{todo["date"]} {todo["time"]}"
         current_datetime = datetime.now()
         print('here')
         # Format the date and time
         formatted_datetime = current_datetime.strftime('%d-%m-%Y %H:%M:%S')
-        print(todo['task'], status, start,  formatted_datetime, self.user['id'])
+        print(todo['task'], status, todo['date'], todo['time'],  formatted_datetime, self.user['id'])
         self.crsr.execute(''' INSERT INTO todo 
-        (task, status, start,  createdAt, createdBy) VALUES (?, ?, ?, ?, ?)
-        ''', (todo['task'], status, start, formatted_datetime, int(self.user['id']), ))
+        (task, status, date, time,  createdAt, createdBy) VALUES (?, ?, ?, ?, ?, ?)
+        ''', (todo['task'], status, todo['date'], todo['time'], formatted_datetime, int(self.user['id']), ))
         self.conn.commit()
         print('here2')
         self.crsr.execute('''SELECT * from todo where createdBy = ?''', (int(self.user['id']), ))
         results = self.crsr.fetchall()
         last_row_id = results[-1][0]
         print(last_row_id)
-
         todo = self.get_todo_from_id(last_row_id)
         print('here23')
         return todo
 
 
     def get_todo_from_id(self, id):
+        obj = UserTable()
         self.crsr.execute("SELECT * FROM todo WHERE id = ?", (id, ))
         todo = self.crsr.fetchone()
-        return todo
+        print(f"{todo[8]}:  {type(todo[8])}")
+        createdBy = obj.get_user_from_username_or_id(id=todo[8])
+        todo_details = {
+            "id": todo[0],
+            "task": todo[1],
+            "date": todo[2],
+            "time": todo[3],
+            "status": todo[4],
+            "timetaken": todo[5],
+            "createdAt": todo[6],
+            "createdBy": createdBy
+        }
+        return todo_details
 
+
+    def get_user_todos(self):
+        obj_user = UserTable()
+        user = obj_user.get_user_from_username_or_id(username=self.user["username"])
+        self.crsr.execute('''SELECT * FROM todo where createdBy = ?''',
+                          (user['id'], ))
+        results = self.crsr.fetchall()
+        return results

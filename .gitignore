@@ -2,3 +2,4 @@ config.py
 myenv/
 toBuild.txt
 lifeTracker
+test.py

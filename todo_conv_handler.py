@@ -19,7 +19,7 @@ async def get_task_name(update: Update, context) -> int:
     task = update.message.text
     context.user_data[user_name]['todo']['task'] = task
     print(f"User {user_name} task name: {task}")  # Replace with actual storage logic
-    await update.message.reply_text(f"Enter your task date (Valid format DD-MM-YY).")
+    await update.message.reply_text(f"Enter your task date (Valid format DD-MM-YY). eg: 09-12-2003")
     return GET_TASK_DATE
 
 
@@ -28,7 +28,7 @@ async def get_task_date(update: Update, context) -> int:
     date = update.message.text
     context.user_data[user_name]['todo']['date'] = date
     print(f"User {user_name} task date {date}")  # Replace with actual storage logic
-    await update.message.reply_text(f"Enter the time for the task (format H:M")
+    await update.message.reply_text(f"Enter the time for the task (24 hr format H:M) ex: 20:02 or 07:09")
     return ADD_TODO
 
 
@@ -36,7 +36,7 @@ async def add_todo(update: Update, context) -> int:
     user_name = str(update.message.from_user.username)
     time = update.message.text
     obj_user = UserTable()
-    current_user = obj_user.get_user_from_username(user_name)
+    current_user = obj_user.get_user_from_username_or_id(user_name)
     print(f"current_user: {current_user}")
     obj_todo = TodoTable(current_user)
     context.user_data[user_name]['todo']['time'] = time
@@ -45,8 +45,7 @@ async def add_todo(update: Update, context) -> int:
     added_todo = obj_todo.insert(todo_dict)
     print(added_todo)
     print(f"Task added")  # Replace with actual storage logic
-    # await update.message.reply_text(f"Enter your task date (Valid format DD-MM-YY).")
-
+    await update.message.reply_text(f"Task: {added_todo['task']} added with id: {added_todo['id']}.")
     return ConversationHandler.END
 
 

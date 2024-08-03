@@ -18,7 +18,9 @@ todo_conv_handler = ConversationHandler(
 app = Application.builder().token(config['Telegram']['API']).build()
 app.add_handler(CommandHandler('start', send_welcome))
 app.add_handler(CommandHandler('menu', show_menu))
+app.add_handler(CommandHandler('todo_list', display_todos))
+# Add your conversation handler here
 app.add_handler(todo_conv_handler)
-
 app.add_error_handler(error)
+# Start the stock alert task
 app.run_polling()

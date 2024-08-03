@@ -1,20 +1,44 @@
-import yfinance as yf
-import time
-ticker_symbol = 'PCJEWELLER.NS'
+from database import db, UserTable
+from ShareData import ShareData
+from telegram.ext import Application
+import asyncio
+from config import config
 
-# Get the data of the stock
-while True:
-    apple_stock = yf.Ticker(ticker_symbol)
+obj_user = UserTable()
+me = "AryanGupta777"
+my_account = obj_user.get_user_from_username_or_id(username=me)
+chat_id = my_account['chatID']
+symbol = "PCJEWELLER.NS"
+target_price = 90
 
-    historical_prices = apple_stock.history(period='1d', interval='1m')
+async def send_stock_alert(bot):
+    print("Hello")
+    global symbol
+    while True:
+        try:
+            obj_share_data = ShareData(symbol)
+            regular_price = round(obj_share_data.get_market_price(), 3)
+            print("regular_price")
+            if regular_price < (target_price + 6):
+                await bot.send_message(chat_id=chat_id, text=f"symbol: {symbol} price: {regular_price}")
+                print("bot msg")
+                await asyncio.sleep(60)
+                print("Wait time")
+        except Exception as e:
+            print(f"Error occurred during stock alert: {e}")  # Log or retry
 
-    # Get the latest price and time
-    latest_price = historical_prices['Close'].iloc[-1]
+async def main():
+    # Initialize your bot and other handlers here
+    app = Application.builder().token(config['Telegram']['API']).build()
 
-    latest_time = historical_prices.index[-1].strftime('%H:%M:%S')
-    print(latest_price, latest_time)
-    price = apple_stock.info
+    # Start the stock alert task
+    asyncio.create_task(send_stock_alert(app.bot))
 
-    print(price['bid'])
-    print(price['ask'])
+    await app.initialize()
+    try:
+        await app.run_polling()
+    finally:
+        await app.shutdown()
 
+if __name__ == '__main__':
+    asyncio.run(main())

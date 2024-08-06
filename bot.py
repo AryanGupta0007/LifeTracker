@@ -17,6 +17,7 @@ todo_conv_handler = ConversationHandler(
 
 app = Application.builder().token(config['Telegram']['API']).build()
 app.add_handler(CommandHandler('start', send_welcome))
+app.add_handler(CommandHandler('audio', download_and_convert_video))
 app.add_handler(CommandHandler('menu', show_menu))
 app.add_handler(CommandHandler('todo_list', display_todos))
 # Add your conversation handler here

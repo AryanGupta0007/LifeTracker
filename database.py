@@ -42,8 +42,13 @@ class db:
         self.conn.commit()
         self.conn.close()
 
+    def get_all_todos_of_current_time(self, date, time):
+        self.crsr.execute('''SELECT * FROM todo WHERE DATE = ? AND TIME = ?''', (date, time,))
+        results = self.crsr.fetchall()
+        return results
+
     def get_all_todos(self):
-        self.crsr.execute('''SELECT * FROM todo''')
+        self.crsr.execute('''SELECT * FROM todo ''')
         results = self.crsr.fetchall()
         return results
 
